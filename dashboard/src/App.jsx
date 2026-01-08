@@ -137,7 +137,7 @@ function App() {
     try {
       const response = await api.post('/devices/generate-qr');
       const qrString = JSON.stringify({
-        apiUrl: 'http://192.168.1.101:5000',
+        apiUrl: 'http://<your-laptop-IP>:5000',
         token: response.data.token
       });
       setQrData(qrString);

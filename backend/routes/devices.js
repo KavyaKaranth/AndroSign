@@ -1,12 +1,14 @@
 const express = require('express');
 const Device = require('../models/Device');
 const authMiddleware = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-const jwt = require('jsonwebtoken');
-
-// Generate QR Code for device registration
+/**
+ * Generate QR Code data for device registration
+ * Dashboard → clicks "Add New Device"
+ */
 router.post('/generate-qr', authMiddleware, async (req, res) => {
   try {
     const registrationToken = jwt.sign(
@@ -14,16 +16,19 @@ router.post('/generate-qr', authMiddleware, async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    
-    res.json({ 
-      token: registrationToken,
-      message: 'QR code data generated'
+
+    res.json({
+      apiUrl: process.env.API_URL,
+      token: registrationToken
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-// GET all devices (protected route)
+
+/**
+ * Get all devices (Dashboard)
+ */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const devices = await Device.find().sort({ registeredAt: -1 });
@@ -33,7 +38,9 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET single device
+/**
+ * Get single device
+ */
 router.get('/:deviceId', authMiddleware, async (req, res) => {
   try {
     const device = await Device.findOne({ deviceId: req.params.deviceId });
@@ -46,18 +53,42 @@ router.get('/:deviceId', authMiddleware, async (req, res) => {
   }
 });
 
-// REGISTER new device
+/**
+ * Register new device (QR-based)
+ * Android App → Scan QR → Call this API
+ */
 router.post('/register', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No registration token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    if (decoded.type !== 'device-registration') {
+      return res.status(403).json({ error: 'Invalid registration token type' });
+    }
+
     const { deviceId, name, location } = req.body;
 
-    // Check if device already exists
+    if (!deviceId || !name) {
+      return res.status(400).json({ error: 'deviceId and name are required' });
+    }
+
     const existingDevice = await Device.findOne({ deviceId });
     if (existingDevice) {
       return res.status(400).json({ error: 'Device already registered' });
     }
 
-    // Create device
     const device = await Device.create({
       deviceId,
       name,
@@ -74,7 +105,9 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// UPDATE device status (heartbeat)
+/**
+ * Heartbeat (device alive check)
+ */
 router.post('/:deviceId/heartbeat', async (req, res) => {
   try {
     const device = await Device.findOneAndUpdate(
@@ -93,7 +126,9 @@ router.post('/:deviceId/heartbeat', async (req, res) => {
   }
 });
 
-// DELETE device
+/**
+ * Delete device
+ */
 router.delete('/:deviceId', authMiddleware, async (req, res) => {
   try {
     await Device.findOneAndDelete({ deviceId: req.params.deviceId });
