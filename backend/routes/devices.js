@@ -1,9 +1,13 @@
 const express = require('express');
 const Device = require('../models/Device');
+const Playlist = require('../models/Playlist');
 const authMiddleware = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
+router.get('/__test', (req, res) => {
+  res.send('DEVICES ROUTE WORKING');
+});
 
 /**
  * Generate QR Code data for device registration
@@ -133,6 +137,60 @@ router.delete('/:deviceId', authMiddleware, async (req, res) => {
   try {
     await Device.findOneAndDelete({ deviceId: req.params.deviceId });
     res.json({ message: 'Device deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Assign playlist to device
+router.post('/:deviceId/assign-playlist', authMiddleware, async (req, res) => {
+  try {
+    const { playlistId } = req.body;
+
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+
+    const device = await Device.findOneAndUpdate(
+      { deviceId: req.params.deviceId },
+      { playlist: playlistId },
+      { new: true }
+    );
+
+    if (!device) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    res.json({
+      message: 'Playlist assigned to device',
+      deviceId: device.deviceId,
+      playlistId: playlist._id
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET playlist assigned to device
+router.get('/:deviceId/playlist', async (req, res) => {
+  try {
+    const device = await Device.findOne({
+      deviceId: req.params.deviceId
+    }).populate({
+      path: 'playlist',
+      populate: {
+        path: 'items.media'
+      }
+    });
+
+    if (!device) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    res.json({
+      playlist: device.playlist
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

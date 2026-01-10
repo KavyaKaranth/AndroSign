@@ -16,6 +16,11 @@ const deviceSchema = new mongoose.Schema({
     enum: ['online', 'offline', 'error'],
     default: 'offline'
   },
+  playlist: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Playlist',
+    default: null
+  },
   lastSeen: {
     type: Date,
     default: Date.now

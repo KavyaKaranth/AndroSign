@@ -4,21 +4,29 @@ class ApiService {
   api: any = null;
 
   initialize(baseURL: string, token?: string) {
-    this.api = axios.create({
-      baseURL,
-      timeout: 10000,
-      headers: token
-        ? { Authorization: `Bearer ${token}` }
-        : undefined,
-    });
-  }
+  console.log("API URL USED:", baseURL);
 
-  registerDevice(deviceInfo: any) {
-    return this.api.post("/api/devices/register", deviceInfo);
+  this.api = axios.create({
+    baseURL,
+    timeout: 10000,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+}
+
+
+  registerDevice(data: any) {
+    return this.api.post("/api/devices/register", data);
   }
 
   sendHeartbeat(deviceId: string) {
     return this.api.post(`/api/devices/${deviceId}/heartbeat`);
+  }
+
+  getPlaylist(deviceId: string) {
+    return this.api.get(`/api/devices/${deviceId}/playlist`);
   }
 }
 

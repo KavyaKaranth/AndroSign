@@ -7,18 +7,22 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    (async () => {
-      const registered = await AsyncStorage.getItem("isRegistered");
-      if (registered === "true") {
-        router.replace("/main");
+    const checkRegistration = async () => {
+      const isRegistered = await AsyncStorage.getItem("isRegistered");
+      console.log("IS REGISTERED:", isRegistered);
+
+      if (isRegistered === "true") {
+        router.replace("/main" as any);
       } else {
-        router.replace("/register");
+        router.replace("/register" as any);
       }
-    })();
+    };
+
+    checkRegistration();
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center" }}>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <ActivityIndicator size="large" />
     </View>
   );

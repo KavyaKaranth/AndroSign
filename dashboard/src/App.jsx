@@ -88,8 +88,13 @@ import React, { useState, useEffect } from 'react';
 import api from './api';
 import { QRCodeSVG } from 'qrcode.react';
 import './App.css';
+import Header from "./components/Header";
+import Media from "./pages/Media";
+import Playlists from "./pages/Playlists";
+import AssignPlaylist from "./pages/AssignPlaylist";
 
 function App() {
+  const [view, setView] = useState("devices");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -137,7 +142,7 @@ function App() {
     try {
       const response = await api.post('/devices/generate-qr');
       const qrString = JSON.stringify({
-        apiUrl: 'http://<your-laptop-IP>:5000',
+        apiUrl: 'http:<your-laptop-IP>//:5000',
         token: response.data.token
       });
       setQrData(qrString);
@@ -191,12 +196,16 @@ function App() {
 
   return (
     <div className="App">
-      <header>
-        <h1>🖥️ AndroSign Dashboard</h1>
-        <button onClick={handleLogout}>Logout</button>
-      </header>
+      <Header
+  currentView={view}
+  onChangeView={setView}
+  onLogout={handleLogout}
+/>
+
       
       <main>
+          {view === "devices" && (
+          <>
         <div className="top-actions">
           <h2>Registered Devices ({devices.length})</h2>
           <button className="qr-button" onClick={generateQR}>
@@ -235,6 +244,14 @@ function App() {
             <p className="no-devices">No devices registered yet. Click "Add New Device" to get started!</p>
           )}
         </div>
+
+        </>
+        )}
+  {view === "media" && <Media />}
+  {view === "playlists" && <Playlists />}
+  {view === "assign" && <AssignPlaylist />}
+  
+
       </main>
     </div>
   );
