@@ -85,5 +85,14 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find().select("name email");
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
 
 module.exports = router;

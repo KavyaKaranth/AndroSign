@@ -30,6 +30,16 @@ router.post('/generate-qr', authMiddleware, async (req, res) => {
   }
 });
 
+// Get user count
+router.get("/users", async (req, res) => {
+  try {
+    const User = require("../models/User");
+    const userCount = await User.countDocuments();
+    res.json({ userCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }   
+});
 /**
  * Get all devices (Dashboard)
  */
