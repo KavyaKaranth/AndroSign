@@ -6,6 +6,15 @@ const playlistSchema = new mongoose.Schema({
     required: true
   },
   description: String,
+  startTime: {
+    type: String, // "05:00"
+    required: true
+  },
+
+  endTime: {
+    type: String, // "10:00"
+    required: true
+  },
   items: [{
     media: {
       type: mongoose.Schema.Types.ObjectId,

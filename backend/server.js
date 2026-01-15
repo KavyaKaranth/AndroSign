@@ -8,6 +8,8 @@ const authRoutes = require('./routes/auth');
 const deviceRoutes = require('./routes/devices');
 const mediaRoutes = require('./routes/media');
 const playlistRoutes = require('./routes/playlists');
+const Device = require("./models/Device");
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -37,9 +39,67 @@ const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 console.log("Uploads path:", path.join(__dirname, "uploads"));
 
+// WebSocket Setup
+const http = require("http");
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+// Make io accessible to routes
+app.set("io", io);
 
 
-// Start Server
-app.listen(5000, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Track online devices
+const onlineDevices = new Map();
+
+io.on("connection", (socket) => {
+  console.log("🔌 WS connected:", socket.id);
+
+  socket.on("DEVICE_ONLINE", ({ deviceId }) => {
+    socket.deviceId = deviceId; // 🔑 store on socket
+
+    onlineDevices.set(deviceId, socket.id);
+
+    console.log("🟢 DEVICE ONLINE:", deviceId);
+
+    io.emit("device-status", {
+      deviceId,
+      status: "online",
+      lastSeen: new Date(),
+    });
+  });
+
+  socket.on("disconnect", () => {
+    const deviceId = socket.deviceId;
+    if (!deviceId) return;
+
+    onlineDevices.delete(deviceId);
+
+    console.log("🔴 DEVICE OFFLINE:", deviceId);
+
+    io.emit("device-status", {
+      deviceId,
+      status: "offline",
+      lastSeen: new Date(),
+    });
+  });
+});
+
+setInterval(async () => {
+  const now = new Date();
+
+  await Device.updateMany(
+    { lastSeen: { $lt: new Date(now - 60000) } }, // 60 sec
+    { status: "offline" }
+  );
+}, 30000); // run every 30 sec
+
+
+server.listen(5000, "0.0.0.0", () => {
+  console.log("🚀 Server + WebSocket running on port 5000");
 });

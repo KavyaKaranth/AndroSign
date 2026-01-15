@@ -13,12 +13,14 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null,file.originalname); // use original filename
+    cb(null,file.originalname);
   },
 });
 
-const upload = multer({ storage });
-
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
 
 router.post(
   "/",
@@ -32,16 +34,27 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      // ✅ FIXED: Properly detect image vs video
+      let type = 'other';
+      if (file.mimetype.startsWith('image/')) {
+        type = 'image';
+      } else if (file.mimetype.startsWith('video/')) {
+        type = 'video';
+      }
+
       const media = await Media.create({
-        filename: file.originalname, // store clean name
-        originalName: file.originalname,
-        type: file.mimetype.startsWith("image") ? "image" : "other",
+        filename: file.filename, // stored filename (with timestamp)
+        originalName: file.originalname, // original filename
+        type: type,
         size: file.size,
-        url: `http://192.168.0.101:5000/uploads/${file.originalname}`,
+        url: `http://192.168.0.101:5000/uploads/${file.filename}`, // use stored filename
       });
+
+      console.log(`✅ Uploaded ${type}: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
       res.status(201).json({ media });
     } catch (err) {
+      console.error('Upload error:', err);
       res.status(500).json({ error: err.message });
     }
   }
@@ -55,4 +68,5 @@ router.get('/', authMiddleware, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 module.exports = router;

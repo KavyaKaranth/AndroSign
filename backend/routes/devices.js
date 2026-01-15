@@ -142,35 +142,51 @@ router.delete('/:deviceId', authMiddleware, async (req, res) => {
   }
 });
 
-// Assign playlist to device
-router.post('/:deviceId/assign-playlist', authMiddleware, async (req, res) => {
+// POST assign playlists to device
+router.post('/:deviceId/assign-playlists', authMiddleware, async (req, res) => {
   try {
-    const { playlistId } = req.body;
+    const { playlistIds } = req.body; // array of playlist IDs
 
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) {
-      return res.status(404).json({ error: 'Playlist not found' });
+    if (!Array.isArray(playlistIds) || playlistIds.length === 0) {
+      return res.status(400).json({ error: 'playlistIds must be a non-empty array' });
+    }
+
+    // Validate playlists
+    const playlists = await Playlist.find({ _id: { $in: playlistIds } });
+    if (playlists.length !== playlistIds.length) {
+      return res.status(404).json({ error: 'One or more playlists not found' });
     }
 
     const device = await Device.findOneAndUpdate(
       { deviceId: req.params.deviceId },
-      { playlist: playlistId },
+        {
+        $addToSet: {
+          playlists: { $each: playlistIds }
+        }
+      },
       { new: true }
     );
 
     if (!device) {
       return res.status(404).json({ error: 'Device not found' });
     }
+    // Notify device via WebSocket about playlist update
+    const io = req.app.get("io");
+
+io.emit("playlist-updated", {
+  deviceId: req.params.deviceId,
+});
 
     res.json({
-      message: 'Playlist assigned to device',
-      deviceId: device.deviceId,
-      playlistId: playlist._id
+      message: 'Playlists assigned to device',
+     
+      playlists:device.playlists
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // GET playlist assigned to device
 router.get('/:deviceId/playlist', async (req, res) => {
@@ -178,7 +194,7 @@ router.get('/:deviceId/playlist', async (req, res) => {
     const device = await Device.findOne({
       deviceId: req.params.deviceId
     }).populate({
-      path: 'playlist',
+      path: 'playlists',
       populate: {
         path: 'items.media'
       }
@@ -189,10 +205,38 @@ router.get('/:deviceId/playlist', async (req, res) => {
     }
 
     res.json({
-      playlist: device.playlist
+      playlists: device.playlists
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// POST remove playlist from device
+router.post("/:deviceId/remove-playlist", authMiddleware, async (req, res) => {
+  try {
+    const { playlistId } = req.body;
+
+    if (!playlistId) {
+      return res.status(400).json({ error: "playlistId is required" });
+    }
+
+    const device = await Device.findOneAndUpdate(
+      { deviceId: req.params.deviceId },
+      { $pull: { playlists: playlistId } },
+      { new: true }
+    );
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({
+      message: "Playlist removed from device",
+      playlists: device.playlists
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
