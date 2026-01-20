@@ -3,8 +3,8 @@ node_modules/
 
 # environment variables
 .env
-backend/.process.env
-
+.process.env
+.env.example
 # logs
 npm-debug.log*
 yarn-debug.log*
