@@ -85,6 +85,7 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// GET - Fetch all users (for testing purposes)
 router.get("/", async (req, res) => {
   try {
     const users = await User.find().select("name email");

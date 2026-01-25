@@ -52,7 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/playlists', playlistRoutes);
-app.use("/uploads", express.static("uploads"))
+//app.use("/uploads", express.static("uploads"));
 app.use("/api/analytics", analyticsRoutes);
 
 const path = require("path");
@@ -179,6 +179,6 @@ app.get("/test-activity", (req, res) => {
   res.send("Activity sent");
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 Server + WebSocket running on port 5000");
+server.listen(PORT, () => {
+  console.log(`🚀 Server + WebSocket running on port  ${PORT}`);
 });
