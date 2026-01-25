@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://YOUR_COMPUTER_IP:5000"; // change to LAN IP if needed
+const API = "https://androsign-backend.onrender.com"; // change to LAN IP if needed
 
 export default function Media() {
   const [file, setFile] = useState(null);

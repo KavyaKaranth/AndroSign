@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://YOUR_COMPUTER_IP:5000/api'
+  baseURL: 'https://androsign-backend.onrender.com/api'
 });
 
 // Add token to all requests

@@ -80,6 +80,7 @@ export default function Main() {
 
           const res = await ApiService.getPlaylist(deviceId);
           const playlists = res.data.playlists;
+          await cacheAllPlaylistsMedia(playlists);
           const active = getActivePlaylist(playlists);
           await AsyncStorage.setItem(
             "cachedPlaylists",
@@ -127,8 +128,10 @@ export default function Main() {
         try {
           await ApiService.sendHeartbeat(deviceId);
           console.log("💓 Heartbeat sent");
+          //setConnectionStatus("online");
         } catch {
           console.log("❌ Heartbeat failed");
+          //setConnectionStatus("offline");
         }
       }, 30000);
     };
@@ -166,7 +169,7 @@ export default function Main() {
       }
     };
 
-    // refresh every 2 minutes
+    //30 seconds refresh
     const interval = setInterval(refreshPlaylistsFromServer, 30 * 1000);
 
     return () => clearInterval(interval);
@@ -277,6 +280,30 @@ export default function Main() {
     return localPath;
   };
 
+  // ---------------- CACHE ALL PLAYLIST MEDIA ----------------
+const cacheAllPlaylistsMedia = async (playlists: any[]) => {
+  const map: Record<string, string> = {};  
+
+  for (const playlist of playlists) {
+    if (!playlist.items) continue;
+
+    for (const item of playlist.items) {
+      if (!item.media) continue;
+
+      if (!map[item.media._id]) {
+        const local = await cacheMedia(item.media);
+        if (local) {
+          map[item.media._id] = local;
+        }
+      }
+    }
+  }
+
+  setLocalUris((prev) => ({ ...prev, ...map }));
+  console.log("✅ Cached media for all playlists");
+};
+
+
   // ---------------- PLAYLIST SWITCHER (TIME-BASED) ----------------
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -297,7 +324,7 @@ export default function Main() {
         return;
       }
       // ✅ Cache any new media files for active playlist
-      for (const item of active.items) {
+      /*for (const item of active.items) {
         if (!localUris[item.media._id]) {
           const local = await cacheMedia(item.media);
           if (local) {
@@ -307,7 +334,7 @@ export default function Main() {
             }));
           }
         }
-      }
+      }*/
 
       // 🔁 Switch only if playlist changed
       if (!playlist || active._id !== playlist._id) {
@@ -376,6 +403,7 @@ export default function Main() {
 
         const res = await ApiService.getPlaylist(deviceId);
         const playlists = res.data.playlists;
+        await cacheAllPlaylistsMedia(playlists);
         const active = getActivePlaylist(playlists);
         if (active) {
           setPlaylist(active);
@@ -405,14 +433,14 @@ export default function Main() {
           );
 
           // Download media for active playlist
-          const map: Record<string, string> = {};
+          /*const map: Record<string, string> = {};
           for (const item of active.items) {
             const local = await cacheMedia(item.media);
             if (local) map[item.media._id] = local;
           }
 
           setLocalUris(map);
-          console.log(`✅ Media cached for active playlist`);
+          console.log(`✅ Media cached for active playlist`);*/
         }
       } catch (err: any) {
         console.log("📴 Offline mode - using cached playlists");
@@ -511,11 +539,9 @@ export default function Main() {
     playlist.items[currentIndex];
 
   const mediaId = currentItem?.media?._id;
-  const imageUri =
-  mediaId
+  const imageUri = mediaId
     ? localUris[mediaId] || currentItem?.media?.url
     : null;
-
 
   const mediaType = currentItem?.media?.type || "image";
   const mediaName = currentItem?.media?.originalName || "Unknown";
@@ -550,6 +576,7 @@ export default function Main() {
     });
   }, []);
 
+  const fitMode = mediaType === "image" ? "contain" : "cover";
   // ---------------- RENDER ----------------
   return (
     <View style={styles.container}>
@@ -617,7 +644,7 @@ export default function Main() {
                 <Image
                   source={{ uri: imageUri }}
                   style={styles.media}
-                  contentFit="cover"
+                  contentFit={fitMode}
                 />
               )}
             </View>

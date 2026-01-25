@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:5000";
+const API = "https://androsign-backend.onrender.com";
 
 export default function Playlists() {
   const [name, setName] = useState("");

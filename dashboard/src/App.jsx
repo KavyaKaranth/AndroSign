@@ -96,7 +96,7 @@ import Analytics from "./pages/Analytics";
 import { io } from "socket.io-client";
 
 // Initialize WebSocket connection
-const socket = io("YOUR_COMPUTER_IP:5000", {
+const socket = io("https://androsign-backend.onrender.com", {
   transports: ["websocket"],
 });
 
@@ -196,7 +196,7 @@ useEffect(() => {
     try {
       const response = await api.post('/devices/generate-qr');
       const qrString = JSON.stringify({
-        apiUrl: 'http://YOUR_COMPUTER_IP:5000',
+        apiUrl: 'https://androsign-backend.onrender.com',
         token: response.data.token
       });
       setQrData(qrString);

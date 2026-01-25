@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://YOUR_COMPUTER_IP:5000";
+const API = "https://androsign-backend.onrender.com";
 
 export default function AssignPlaylist() {
   const [devices, setDevices] = useState([]);
@@ -98,8 +98,15 @@ const isPlaylistActiveNow = (playlist) => {
   const startMinutes = sh * 60 + sm;
   const endMinutes = eh * 60 + em;
 
-  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  // Normal case (morning, afternoon, evening)
+  if (startMinutes < endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  }
+
+  // Midnight case (night playlists like 23:00 → 00:00)
+  return currentMinutes >= startMinutes || currentMinutes < endMinutes;
 };
+
 
   return (
     <div>
